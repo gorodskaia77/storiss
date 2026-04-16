@@ -25,7 +25,17 @@ export default async (req) => {
   }
 
   try {
-    const arrayBuffer = await req.arrayBuffer();
+    const formData = await req.formData();
+    const file = formData.get("file");
+
+    if (!(file instanceof File)) {
+      return new Response(JSON.stringify({ error: "Missing file upload" }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
+    const arrayBuffer = await file.arrayBuffer();
 
     if (!arrayBuffer || arrayBuffer.byteLength === 0) {
       return new Response(JSON.stringify({ error: "Empty file body" }), {
@@ -34,7 +44,7 @@ export default async (req) => {
       });
     }
 
-    const requestedName = sanitizeFileName(req.headers.get("x-file-name") || "story.png");
+    const requestedName = sanitizeFileName(file.name || "story.png");
     const key = `${Date.now()}-${crypto.randomUUID()}-${requestedName}`;
 
     await store.set(key, new Uint8Array(arrayBuffer), {
