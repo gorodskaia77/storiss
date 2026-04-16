@@ -1560,6 +1560,10 @@
       return window.Telegram?.WebApp || null;
     }
 
+    function getTelegramInitData() {
+      return getTelegramWebApp()?.initData || '';
+    }
+
     function canvasToBlob(canvas) {
       return new Promise((resolve, reject) => {
         canvas.toBlob(blob => {
@@ -1598,6 +1602,36 @@
       }
 
       return response.json();
+    }
+
+    async function sendBlobToTelegramChat(blob, fileName) {
+      const initData = getTelegramInitData();
+      if (!initData) {
+        throw new Error('Telegram initData is unavailable');
+      }
+
+      const formData = new FormData();
+      formData.append('file', blob, fileName);
+      formData.append('initData', initData);
+
+      const response = await fetch('/.netlify/functions/send-to-chat', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const responseText = await response.text().catch(() => '');
+      let payload = null;
+      try {
+        payload = responseText ? JSON.parse(responseText) : null;
+      } catch (parseError) {
+        payload = null;
+      }
+
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || `Send to chat failed with status ${response.status}`);
+      }
+
+      return payload;
     }
 
     function openTelegramFileLink(fileUrl) {
@@ -1670,37 +1704,15 @@
     async function downloadCurrentSlide() {
       const slide = state.slides[state.activeSlideIndex];
       if (!slide) return;
-      setStatus('Готовлю PNG текущей сторис…', 'working');
+      setStatus(isTelegramMiniApp() ? 'Готовлю сторис и отправляю в чат…' : 'Готовлю PNG текущей сторис…', 'working');
       try {
         const canvas = await captureSlide(slide, state.activeSlideIndex);
         const blob = await canvasToBlob(canvas);
         const fileName = buildSlideFileName(slide, state.activeSlideIndex);
 
         if (isTelegramMiniApp()) {
-          const upload = await uploadBlobForTelegram(blob, fileName);
-          let tgResult;
-          try {
-            tgResult = await requestTelegramDownload(upload.fileUrl, upload.fileName || fileName);
-          } catch (telegramDownloadError) {
-            console.warn('Telegram download failed, trying openLink fallback', telegramDownloadError);
-            const openedViaLink = openTelegramFileLink(upload.fileUrl);
-            if (openedViaLink) {
-              setStatus('Telegram не скачал файл напрямую, но открыл ссылку на PNG. Сохрани файл из открывшегося экрана.', 'ready');
-              return;
-            }
-
-            openFileUrlOutsideTelegram(upload.fileUrl);
-            setStatus('Открыла прямую ссылку на PNG. Если Telegram не перехватил её, сохрани файл из браузера.', 'ready');
-            return;
-          }
-          setStatus(
-            tgResult.ok
-              ? tgResult.mode === 'downloadFile'
-                ? 'Telegram открыл нативное скачивание. Подтверди сохранение файла.'
-                : 'Telegram открыл прямую ссылку на PNG. Сохрани файл из открывшегося экрана.'
-              : 'Скачивание не подтверждено в Telegram.',
-            'ready'
-          );
+          await sendBlobToTelegramChat(blob, fileName);
+          setStatus('Сторис отправлена тебе в чат с ботом. Открой диалог и сохрани файл оттуда.', 'ready');
           return;
         }
 
@@ -1724,7 +1736,7 @@
         console.error(error);
         setStatus(
           isTelegramMiniApp()
-            ? `Не удалось передать PNG в Telegram: ${error?.message || 'неизвестная ошибка'}`
+            ? `Не удалось отправить сторис в чат: ${error?.message || 'неизвестная ошибка'}`
             : 'Не удалось скачать текущую сторис',
           'error'
         );
@@ -1780,7 +1792,7 @@
       tg.ready();
       tg.expand();
       tg.MainButton.setParams({
-        text: 'Скачать текущую сторис',
+        text: 'Отправить в чат',
         color: '#d7a84f',
         text_color: '#1d160d',
         is_visible: false,
@@ -1907,6 +1919,9 @@
       loadState();
       hydrateInputs();
       updatePromptTemplate();
+      if (isTelegramMiniApp()) {
+        els.downloadCurrentBtn.textContent = 'Отправить в чат';
+      }
       refreshPreview();
       bindEvents();
       setupTelegramWebApp();
