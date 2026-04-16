@@ -1170,7 +1170,7 @@
     function slugify(text) {
       return (text || 'story')
         .toLowerCase()
-        .replace(/[^a-zР°-СЏ0-9]+/gi, '-')
+        .replace(/[^a-z0-9]+/gi, '-')
         .replace(/^-+|-+$/g, '')
         .slice(0, 40) || 'story';
     }
