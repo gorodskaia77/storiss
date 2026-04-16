@@ -1,0 +1,9 @@
+{
+  "name": "story-generator-mvp-v10",
+  "version": "1.0.0",
+  "private": true,
+  "description": "StoryFlow mini app with Netlify-native file storage for Telegram downloads",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}

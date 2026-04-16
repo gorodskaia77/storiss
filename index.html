@@ -1,0 +1,1902 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StoryFlow — генератор сторис для экспертов</title>
+  <meta name="theme-color" content="#10131a" />
+  <style>
+    :root {
+      --bg: #0f1218;
+      --panel: #171c25;
+      --panel-2: #1e2430;
+      --line: rgba(255,255,255,0.08);
+      --text: #f5f7fb;
+      --muted: #b5bdd0;
+      --accent: #d7a84f;
+      --accent-soft: rgba(215,168,79,0.18);
+      --accent-mid: rgba(215,168,79,0.38);
+      --accent-glow: rgba(215,168,79,0.24);
+      --shadow: 0 16px 40px rgba(0,0,0,0.28);
+      --radius: 22px;
+      --phone-width: 330px;
+      --phone-height: 586px;
+      --safe-top: 62px;
+      --safe-bottom: 94px;
+      --font-main: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-display: "Manrope", Inter, system-ui, sans-serif;
+      --overlay: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.56) 60%, rgba(0,0,0,0.82) 100%);
+      --badge-bg: rgba(255,255,255,0.08);
+      --btn-bg: #222939;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--font-main); }
+    body { min-height: 100vh; }
+    button, input, textarea, select { font: inherit; }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(340px, 450px) 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--line);
+      background: linear-gradient(180deg, #11161f 0%, #0d1118 100%);
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .content {
+      padding: 24px;
+      overflow-y: auto;
+      background:
+        radial-gradient(circle at top right, rgba(215,168,79,0.08), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(100,139,255,0.08), transparent 32%),
+        linear-gradient(180deg, #0d1118 0%, #0f1218 100%);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .brand__left {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      background: linear-gradient(145deg, #f3d59b, #9d6e12);
+      display: grid;
+      place-items: center;
+      color: #1a1611;
+      font-weight: 900;
+      box-shadow: 0 12px 24px rgba(215,168,79,0.22);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.18rem;
+      font-family: var(--font-display);
+      letter-spacing: -0.02em;
+    }
+
+    .brand p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.35;
+    }
+
+    .save-note {
+      font-size: 0.83rem;
+      color: var(--muted);
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.03);
+    }
+
+    .section {
+      margin-bottom: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+
+    .section h2 {
+      margin: 0 0 14px;
+      font-size: 1rem;
+      font-family: var(--font-display);
+      letter-spacing: -0.02em;
+    }
+
+    .section__hint {
+      margin: -4px 0 14px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-bottom: 12px;
+    }
+
+    .field label {
+      font-size: 0.9rem;
+      color: #eef2fb;
+      font-weight: 600;
+    }
+
+    .field small {
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    input[type="text"],
+    input[type="file"],
+    textarea,
+    select {
+      width: 100%;
+      border-radius: 16px;
+      background: var(--panel-2);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--text);
+      padding: 13px 14px;
+      outline: none;
+      transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+    }
+
+    textarea {
+      min-height: 138px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: rgba(215,168,79,0.7);
+      background: #232a38;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.87rem;
+      cursor: pointer;
+      user-select: none;
+      transition: 0.2s ease;
+    }
+
+    .chip.active {
+      background: var(--accent-soft);
+      border-color: var(--accent-mid);
+      color: #fff7ea;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    .inline-actions, .download-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 16px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--text);
+      background: var(--btn-bg);
+      transition: transform 0.15s ease, opacity 0.2s ease, background 0.2s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.48; cursor: not-allowed; transform: none; }
+
+    .btn--primary {
+      background: linear-gradient(135deg, #f0cb80, #b57e17);
+      color: #1c160f;
+    }
+
+    .btn--soft {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .btn--danger {
+      background: #49232a;
+      color: #ffd9dd;
+    }
+
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .preview-header h2 {
+      margin: 0;
+      font-size: 1.35rem;
+      font-family: var(--font-display);
+      letter-spacing: -0.025em;
+    }
+
+    .preview-header p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      max-width: 720px;
+      line-height: 1.5;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .status__dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #5f6b85;
+    }
+
+    .status[data-mode="ready"] .status__dot { background: #55d58c; }
+    .status[data-mode="working"] .status__dot { background: #f4c56f; }
+    .status[data-mode="error"] .status__dot { background: #ff7f8e; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) minmax(290px, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .phone-wrap {
+      position: sticky;
+      top: 24px;
+    }
+
+    .phone {
+      width: min(var(--phone-width), 100%);
+      aspect-ratio: 9 / 16;
+      border-radius: 34px;
+      background: #0a0d13;
+      padding: 10px;
+      box-shadow: var(--shadow), 0 0 0 1px var(--accent-soft) inset;
+      border: 1px solid rgba(255,255,255,0.08);
+      margin-inline: auto;
+    }
+
+    .slide {
+      width: 100%;
+      height: 100%;
+      border-radius: 26px;
+      position: relative;
+      overflow: hidden;
+      background: #161922 center / cover no-repeat;
+    }
+
+    .slide.export-flat {
+      border-radius: 0;
+    }
+
+    .slide--export {
+      width: 1080px;
+      height: 1920px;
+      border-radius: 0;
+    }
+
+    .slide--export .slide__image {
+      transform: none;
+    }
+
+    .slide--export .slide__content {
+      padding: 72px 68px calc(var(--safe-bottom) * 2.35);
+    }
+
+    .slide--export .slide__bottom {
+      gap: 34px;
+    }
+
+    .slide--export .slide__text-box {
+      max-width: 86%;
+      padding: 34px 38px 32px;
+      border-radius: 42px;
+      border-width: 2px;
+      box-shadow: 0 40px 90px var(--accent-glow);
+      backdrop-filter: blur(12px);
+    }
+
+    .slide--export .slide__text-box.is-long {
+      max-width: 92%;
+    }
+
+    .slide--export .slide__body {
+      font-size: 82px;
+      line-height: 1.1;
+      text-shadow: 0 8px 30px rgba(0,0,0,0.32);
+    }
+
+    .slide--export .slide__body.slide__body--small {
+      font-size: 68px;
+      line-height: 1.1;
+    }
+
+    .slide--export .slide__cta {
+      padding: 22px 32px;
+      border-radius: 28px;
+      gap: 14px;
+      font-size: 42px;
+      box-shadow: 0 22px 54px var(--accent-glow);
+    }
+
+    .slide__bg-color {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(14,16,21,0.08) 0%, rgba(14,16,21,0.54) 62%, rgba(14,16,21,0.88) 100%);
+    }
+
+    .slide__image {
+      position: absolute;
+      inset: 0;
+      background-position: center;
+      background-size: cover;
+      filter: saturate(1.03) contrast(1.02);
+      transform: scale(1.01);
+    }
+
+    .slide__overlay {
+      position: absolute;
+      inset: 0;
+      background: var(--overlay);
+    }
+
+    .slide__content {
+      position: absolute;
+      inset: 0;
+      padding: 22px 18px var(--safe-bottom);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      z-index: 2;
+    }
+
+    .slide__bottom {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .slide__text-box {
+      width: 100%;
+      max-width: 88%;
+      padding: 12px 13px 11px;
+      border-radius: 20px;
+      background:
+        linear-gradient(180deg, rgba(8,11,18,0.08), rgba(8,11,18,0.18) 22%, rgba(8,11,18,0.48) 58%, rgba(8,11,18,0.76) 100%),
+        linear-gradient(135deg, var(--accent-soft), transparent 62%);
+      border: 1px solid var(--accent-mid);
+      box-shadow: 0 14px 36px var(--accent-glow);
+      backdrop-filter: blur(6px);
+    }
+
+    .slide__text-box.is-long {
+      max-width: 92%;
+    }
+
+    .slide__body {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(0.94rem, 2vw, 1.08rem);
+      line-height: 1.18;
+      letter-spacing: -0.025em;
+      color: rgba(255,255,255,0.98);
+      max-width: 100%;
+      white-space: pre-wrap;
+      text-shadow: 0 4px 18px rgba(0,0,0,0.24);
+    }
+
+    .slide__body.slide__body--small {
+      font-size: clamp(0.86rem, 1.8vw, 0.98rem);
+      line-height: 1.16;
+    }
+
+    .slide__cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      max-width: fit-content;
+      padding: 10px 14px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--accent-soft), rgba(255,255,255,0.12));
+      border: 1px solid var(--accent-mid);
+      font-weight: 700;
+      backdrop-filter: blur(10px);
+      color: #fff;
+      text-shadow: none;
+      box-shadow: 0 10px 26px var(--accent-glow);
+    }
+
+    .slide--minimal {
+      --overlay: linear-gradient(180deg, rgba(8,10,16,0.06) 0%, rgba(8,10,16,0.24) 42%, rgba(8,10,16,0.74) 100%);
+      --badge-bg: rgba(255,255,255,0.08);
+      --font-display: "Inter", var(--font-main);
+    }
+
+    .slide--feminine {
+      --overlay: linear-gradient(180deg, rgba(42,20,34,0.08) 0%, rgba(42,20,34,0.34) 40%, rgba(20,10,18,0.82) 100%);
+      --badge-bg: rgba(255, 228, 234, 0.12);
+      --font-display: "Georgia", "Times New Roman", serif;
+    }
+
+    .slide--bold {
+      --overlay: linear-gradient(180deg, rgba(15,10,8,0.08) 0%, rgba(20,12,8,0.38) 35%, rgba(10,8,8,0.88) 100%);
+      --badge-bg: rgba(255, 200, 120, 0.16);
+      --font-display: "Manrope", Inter, sans-serif;
+    }
+
+    .slide--premium {
+      --overlay: linear-gradient(180deg, rgba(7,9,13,0.14) 0%, rgba(9,10,16,0.44) 42%, rgba(7,8,13,0.94) 100%);
+      --badge-bg: rgba(215,168,79,0.18);
+      --font-display: "Manrope", Inter, sans-serif;
+    }
+
+    .slide--minimal .slide__bottom {
+      gap: 10px;
+    }
+
+    .slide--minimal .slide__text-box {
+      max-width: 76%;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+    }
+
+    .slide--minimal .slide__body {
+      font-family: "Inter", var(--font-main);
+      font-weight: 700;
+      font-size: clamp(0.96rem, 1.95vw, 1.08rem);
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.45);
+    }
+
+    .slide--minimal .slide__cta {
+      padding: 8px 12px;
+      border-radius: 14px;
+      background: rgba(7,10,16,0.44);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: none;
+    }
+
+    .slide--feminine .slide__bottom {
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .slide--feminine .slide__text-box {
+      max-width: 82%;
+      border-radius: 28px;
+      padding: 16px 18px 14px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background:
+        linear-gradient(180deg, rgba(74,33,58,0.18), rgba(43,20,32,0.38) 36%, rgba(16,10,16,0.72) 100%),
+        linear-gradient(135deg, var(--accent-soft), rgba(255,255,255,0.05) 58%, transparent 78%);
+      box-shadow: 0 16px 34px rgba(29,11,23,0.24);
+    }
+
+    .slide--feminine .slide__body {
+      font-family: "Georgia", "Times New Roman", serif;
+      font-weight: 700;
+      font-size: clamp(0.96rem, 1.95vw, 1.06rem);
+      line-height: 1.18;
+      letter-spacing: -0.01em;
+    }
+
+    .slide--feminine .slide__cta {
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.12), var(--accent-soft));
+    }
+
+    .slide--bold .slide__bottom {
+      gap: 12px;
+    }
+
+    .slide--bold .slide__text-box {
+      max-width: 94%;
+      padding: 15px 16px 14px;
+      border-width: 1px;
+      border-left: 4px solid var(--accent);
+      border-radius: 18px;
+      box-shadow: 0 20px 44px rgba(0,0,0,0.26);
+      background:
+        linear-gradient(180deg, rgba(10,10,12,0.18), rgba(10,10,12,0.34) 18%, rgba(10,10,12,0.74) 56%, rgba(10,10,12,0.92) 100%),
+        linear-gradient(135deg, var(--accent-soft), transparent 48%);
+    }
+
+    .slide--bold .slide__body {
+      font-family: "Manrope", Inter, sans-serif;
+      font-weight: 800;
+      font-size: clamp(1.02rem, 2.25vw, 1.18rem);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+    }
+
+    .slide--bold .slide__cta {
+      padding: 11px 15px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent), rgba(255,255,255,0.16));
+      color: #15110d;
+      border: none;
+      box-shadow: 0 12px 24px var(--accent-glow);
+    }
+
+    .slide--premium .slide__content {
+      padding-inline: 22px;
+    }
+
+    .slide--premium .slide__bottom {
+      gap: 14px;
+      align-items: center;
+    }
+
+    .slide--premium .slide__text-box {
+      max-width: 78%;
+      margin-inline: auto;
+      padding: 15px 16px 14px;
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background:
+        linear-gradient(180deg, rgba(8,10,16,0.16), rgba(8,11,18,0.28) 24%, rgba(8,11,18,0.60) 58%, rgba(8,11,18,0.84) 100%),
+        linear-gradient(135deg, rgba(255,255,255,0.06), var(--accent-soft) 48%, transparent 78%);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    .slide--premium .slide__body {
+      text-align: center;
+      font-weight: 700;
+      font-size: clamp(0.95rem, 1.9vw, 1.04rem);
+      line-height: 1.18;
+      letter-spacing: -0.02em;
+    }
+
+    .slide--premium .slide__cta {
+      margin-inline: auto;
+      border-radius: 999px;
+      padding: 10px 16px;
+      background: rgba(8,11,18,0.48);
+      border: 1px solid var(--accent-mid);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+    }
+
+    
+    .slide--export.slide--minimal .slide__text-box {
+      max-width: 78%;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+    }
+
+    .slide--export.slide--minimal .slide__body {
+      font-size: 78px;
+      line-height: 1.14;
+      text-shadow: 0 8px 28px rgba(0,0,0,0.42);
+    }
+
+    .slide--export.slide--minimal .slide__body.slide__body--small {
+      font-size: 64px;
+    }
+
+    .slide--export.slide--feminine .slide__text-box {
+      max-width: 82%;
+      border-radius: 56px;
+      padding: 40px 44px 36px;
+    }
+
+    .slide--export.slide--feminine .slide__body {
+      font-size: 78px;
+      line-height: 1.12;
+    }
+
+    .slide--export.slide--feminine .slide__body.slide__body--small {
+      font-size: 64px;
+    }
+
+    .slide--export.slide--bold .slide__text-box {
+      max-width: 92%;
+      padding: 36px 40px 34px;
+      border-left-width: 8px;
+      border-radius: 34px;
+    }
+
+    .slide--export.slide--bold .slide__body {
+      font-size: 86px;
+      line-height: 1.06;
+    }
+
+    .slide--export.slide--bold .slide__body.slide__body--small {
+      font-size: 70px;
+    }
+
+    .slide--export.slide--premium .slide__content {
+      padding-inline: 76px;
+    }
+
+    .slide--export.slide--premium .slide__text-box {
+      max-width: 78%;
+      padding: 36px 40px 34px;
+      border-radius: 48px;
+    }
+
+    .slide--export.slide--premium .slide__body {
+      font-size: 74px;
+      line-height: 1.14;
+    }
+
+    .slide--export.slide--premium .slide__body.slide__body--small {
+      font-size: 62px;
+    }
+
+    .slide--export .slide__cta {
+      margin-top: 2px;
+    }
+
+.slide--cover .slide__body {
+      font-size: inherit;
+    }
+
+    .slide--quote .slide__body {
+      font-size: clamp(1.15rem, 2.6vw, 1.34rem);
+    }
+
+    .slide--cta .slide__cta {
+      background: linear-gradient(135deg, rgba(255,255,255,0.12), var(--accent-soft));
+      border-color: var(--accent-mid);
+    }
+
+    .editor-panel, .gallery-panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.015));
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 18px;
+    }
+
+    .editor-panel h3, .gallery-panel h3 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+      font-family: var(--font-display);
+      letter-spacing: -0.02em;
+    }
+
+    .panel-subtext {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .editor-slide-indicator {
+      width: 100%;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.03));
+      border: 1px solid var(--accent-mid);
+      color: var(--text);
+      padding: 13px 14px;
+      font-weight: 600;
+    }
+
+    .prompt-text {
+      min-height: 132px;
+      font-size: 0.93rem;
+      line-height: 1.45;
+    }
+
+    .helper-note {
+      margin-top: 10px;
+      font-size: 0.84rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .thumbs {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .thumb {
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      border-radius: 18px;
+      padding: 8px;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+
+    .thumb.active {
+      border-color: var(--accent-mid);
+      background: var(--accent-soft);
+      box-shadow: inset 0 0 0 1px var(--accent-soft);
+    }
+
+    .thumb:hover { transform: translateY(-2px); }
+
+    .thumb__mini {
+      width: 100%;
+      aspect-ratio: 9 / 16;
+      border-radius: 14px;
+      background: #151923 center / cover no-repeat;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .thumb__overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.08), rgba(0,0,0,0.72));
+    }
+
+    .thumb__text {
+      position: absolute;
+      inset: auto 10px 10px 10px;
+      color: #fff;
+      z-index: 2;
+      font-size: 0.82rem;
+      line-height: 1.15;
+      font-weight: 700;
+      text-shadow: 0 4px 16px rgba(0,0,0,0.35);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .thumb__meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .empty {
+      padding: 32px 22px;
+      border-radius: 24px;
+      border: 1px dashed rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.02);
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .footer-note--nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .nav-buttons {
+      display: inline-flex;
+      gap: 8px;
+    }
+
+    .nav-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      border: 1px solid var(--accent-mid);
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03));
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    .kbd {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      font-size: 0.8rem;
+      color: #fff;
+      margin-inline: 4px;
+    }
+
+    .hidden-capture {
+      position: fixed;
+      left: -99999px;
+      top: 0;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    @media (max-width: 1140px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { border-right: none; border-bottom: 1px solid var(--line); }
+      .workspace { grid-template-columns: 1fr; }
+      .phone-wrap { position: relative; top: 0; }
+    }
+
+    @media (max-width: 720px) {
+      .sidebar, .content { padding: 16px; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .preview-header { flex-direction: column; }
+      .thumbs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .brand { flex-direction: column; align-items: stretch; }
+      .brand__left { align-items: flex-start; }
+      .phone { width: min(100%, 390px); padding: 8px; border-radius: 28px; }
+      .slide { border-radius: 22px; }
+      .download-actions .btn, .inline-actions .btn { width: 100%; justify-content: center; }
+      .nav-btn { width: 46px; height: 46px; font-size: 1rem; }
+      .editor-panel, .gallery-panel, .section { padding: 16px; }
+      textarea { min-height: 120px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand__left">
+          <div class="logo">SF</div>
+          <div>
+            <h1>StoryFlow — генератор сторис</h1>
+            <p>Фото + текст + цель → готовая серия сторис под Instagram, Telegram и ВКонтакте.</p>
+          </div>
+        </div>
+        <div class="save-note" id="draftState">Текст и настройки сохраняются локально</div>
+      </div>
+
+      <section class="section">
+        <h2>1. Основа сторис</h2>
+        <p class="section__hint">Загрузи фото, вставь готовый текст или тезисы. Инструмент ничего не дописывает от себя — только аккуратно распределяет твой текст по экранам.</p>
+
+        <div class="field">
+          <label for="photoInput">Фото эксперта</label>
+          <input id="photoInput" type="file" accept="image/*" multiple />
+          <small>Можно загрузить сразу несколько фото. Слайды сами распределят их по серии. Фото не сохраняются после закрытия.</small>
+        </div>
+
+        <div class="field">
+          <label for="ctaInput">Призыв к действию</label>
+          <input id="ctaInput" type="text" placeholder="Напиши слово «СТОРИС» в личку" />
+          <small>Появится только на финальном слайде, чтобы не лепить кнопку везде подряд.</small>
+        </div>
+
+        <div class="field">
+          <label for="storyText">Текст, тезисы или расшифровка</label>
+          <textarea id="storyText" placeholder="Например: Я долго думала, что сторис должны быть идеальными. Из-за этого выкладывала их через раз... Сегодня покажу, как сделать проще и живее. В конце дам понятный шаг, что делать дальше."></textarea>
+          <small>Ниже сразу лежит готовый промпт, если хочешь быстро накидать сценарий через ChatGPT.</small>
+        </div>
+
+        <div class="field">
+          <label for="promptTemplate">Подсказка / промпт для сценария</label>
+          <textarea id="promptTemplate" class="prompt-text" readonly></textarea>
+          <small>Скопируй, подставь свою тему и получишь заготовку текста уже под нужное число сторис.</small>
+        </div>
+        <div class="inline-actions">
+          <button id="copyPromptBtn" class="btn btn--soft">Скопировать промпт</button>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>2. Настройки подачи</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label for="goalSelect">Цель</label>
+            <select id="goalSelect">
+              <option value="warmup">Прогрев</option>
+              <option value="sale">Продажа</option>
+              <option value="story">Личная история</option>
+              <option value="review">Отзыв / кейс</option>
+              <option value="announce">Анонс эфира / запуска</option>
+              <option value="engage">Вовлечение</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="platformSelect">Площадка</label>
+            <select id="platformSelect">
+              <option value="instagram">Instagram</option>
+              <option value="telegram">Telegram</option>
+              <option value="vk">ВКонтакте</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Стиль</label>
+          <div class="chips" id="styleChips">
+            <button class="chip active" type="button" data-style="minimal">Минимализм</button>
+            <button class="chip" type="button" data-style="feminine">Мягко / женственно</button>
+            <button class="chip" type="button" data-style="bold">Ярко / продающе</button>
+            <button class="chip" type="button" data-style="premium">Премиально</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Цвет акцента</label>
+          <div class="chips" id="accentChips">
+            <button class="chip active" type="button" data-accent="#d7a84f">Золото</button>
+            <button class="chip" type="button" data-accent="#c791d8">Лиловый</button>
+            <button class="chip" type="button" data-accent="#78c0ff">Голубой</button>
+            <button class="chip" type="button" data-accent="#7dd9b1">Мятный</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Формат серии</label>
+          <div class="chips" id="lengthChips">
+            <button class="chip active" type="button" data-length="3">3 сторис</button>
+            <button class="chip" type="button" data-length="4">4 сторис</button>
+            <button class="chip" type="button" data-length="5">5 сторис</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>3. Генерация</h2>
+        <div class="inline-actions">
+          <button id="generateBtn" class="btn btn--primary">Собрать сторис</button>
+          <button id="resetBtn" class="btn btn--soft">Сбросить</button>
+          <button id="demoBtn" class="btn btn--soft">Заполнить демо</button>
+        </div>
+      </section>
+    </aside>
+
+    <main class="content">
+      <div class="preview-header">
+        <div>
+          <h2>Предпросмотр и редактирование</h2>
+          <p>Слева живой экран сторис, справа — вся серия и простой редактор. Здесь нет лишнего мусора: инструмент просто раскладывает твой текст по экранам и даёт быстро править каждый слайд.</p>
+        </div>
+        <div class="status" id="statusBox" data-mode="idle">
+          <span class="status__dot"></span>
+          <span id="statusText">Жду твой первый заход</span>
+        </div>
+      </div>
+
+      <div class="workspace">
+        <div class="phone-wrap">
+          <div class="phone">
+            <div class="slide" id="liveSlide"></div>
+          </div>
+          <div class="download-actions" style="margin-top: 16px; justify-content: center;">
+            <button id="downloadCurrentBtn" class="btn btn--primary" disabled>Скачать текущую сторис</button>
+            <button id="downloadAllBtn" class="btn btn--soft" disabled>Скачать все PNG</button>
+          </div>
+          <div class="footer-note footer-note--nav">
+            <span>Листать серию</span>
+            <div class="nav-buttons">
+              <button id="prevSlideBtn" type="button" class="nav-btn">&#8592;</button>
+              <button id="nextSlideBtn" type="button" class="nav-btn">&#8594;</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <section class="gallery-panel" style="margin-bottom: 20px;">
+            <h3>Серия сторис</h3>
+            <p class="panel-subtext">Выбери экран, который хочешь править. Активный выделен рамкой.</p>
+            <div id="thumbsBox" class="thumbs"></div>
+            <div id="emptyState" class="empty">Пока пусто. Загрузите фото, вставьте текст и нажмите «Собрать сторис».<br />После этого здесь появятся миниатюры серии.</div>
+          </section>
+
+          <section class="editor-panel">
+            <h3>Редактор активной сторис</h3>
+            <div class="field">
+              <label>Сейчас редактируешь</label>
+              <div id="editorSlideIndicator" class="editor-slide-indicator">вЂ”</div>
+            </div>
+
+            <div class="field">
+              <label for="slideBodyInput">Текст на слайде</label>
+              <textarea id="slideBodyInput" placeholder="Основной текст активного слайда"></textarea>
+            </div>
+
+            <div class="field">
+              <label for="slideCtaInput">Призыв к действию</label>
+              <input id="slideCtaInput" type="text" placeholder="Напиши слово в личку" />
+            </div>
+
+            <div class="inline-actions">
+              <button id="applyEditsBtn" class="btn btn--primary" disabled>Применить правки</button>
+              <button id="duplicateSlideBtn" class="btn btn--soft" disabled>Дублировать слайд</button>
+              <button id="deleteSlideBtn" class="btn btn--danger" disabled>Удалить слайд</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="hidden-capture" id="captureRoot"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    const STORAGE_KEY = 'storyflow-mvp-state-v10';
+
+    const state = {
+      photoDataUrls: [],
+      photoDataUrl: '',
+      cta: '',
+      storyText: '',
+      goal: 'warmup',
+      platform: 'instagram',
+      style: 'minimal',
+      accent: '#d7a84f',
+      length: 3,
+      slides: [],
+      activeSlideIndex: 0,
+    };
+
+    const els = {
+      photoInput: document.getElementById('photoInput'),
+      ctaInput: document.getElementById('ctaInput'),
+      storyText: document.getElementById('storyText'),
+      goalSelect: document.getElementById('goalSelect'),
+      platformSelect: document.getElementById('platformSelect'),
+      styleChips: document.getElementById('styleChips'),
+      accentChips: document.getElementById('accentChips'),
+      lengthChips: document.getElementById('lengthChips'),
+      generateBtn: document.getElementById('generateBtn'),
+      resetBtn: document.getElementById('resetBtn'),
+      demoBtn: document.getElementById('demoBtn'),
+      liveSlide: document.getElementById('liveSlide'),
+      thumbsBox: document.getElementById('thumbsBox'),
+      emptyState: document.getElementById('emptyState'),
+      statusBox: document.getElementById('statusBox'),
+      statusText: document.getElementById('statusText'),
+      downloadCurrentBtn: document.getElementById('downloadCurrentBtn'),
+      downloadAllBtn: document.getElementById('downloadAllBtn'),
+      draftState: document.getElementById('draftState'),
+      promptTemplate: document.getElementById('promptTemplate'),
+      copyPromptBtn: document.getElementById('copyPromptBtn'),
+      editorSlideIndicator: document.getElementById('editorSlideIndicator'),
+      slideBodyInput: document.getElementById('slideBodyInput'),
+      slideCtaInput: document.getElementById('slideCtaInput'),
+      applyEditsBtn: document.getElementById('applyEditsBtn'),
+      duplicateSlideBtn: document.getElementById('duplicateSlideBtn'),
+      deleteSlideBtn: document.getElementById('deleteSlideBtn'),
+      prevSlideBtn: document.getElementById('prevSlideBtn'),
+      nextSlideBtn: document.getElementById('nextSlideBtn'),
+      captureRoot: document.getElementById('captureRoot'),
+    };
+
+    const GOAL_LABELS = {
+      warmup: 'Прогрев',
+      sale: 'Продажа',
+      story: 'Личная история',
+      review: 'Отзыв / кейс',
+      announce: 'Анонс',
+      engage: 'Вовлечение',
+    };
+
+    function getPromptTemplate(goal, length) {
+      const count = Number(length) || 3;
+      const templates = {
+        warmup: `Напиши мне сценарий для ${count} сторис на тему: [вставь тему].\n\nФормат: короткие фразы, по одному смыслу на экран, без заголовков и подписи снизу.\nСтруктура: 1) цепляющее начало 2) в чём затык или боль 3) моя мысль / решение ${count > 3 ? '4) пример или уточнение 5) мягкий призыв' : '4) мягкий призыв'}.\n\nВерни только текст по экранам: Экран 1, Экран 2 и так далее.`,
+        sale: `Собери мне текст для ${count} сторис на тему: [вставь тему / продукт].\n\nНужно: живо, без канцелярита, без заголовков, без воды, по одному смыслу на экран.\nСтруктура: 1) зацепка 2) проблема 3) что меняется / решение ${count > 3 ? '4) кому это подходит 5) призыв к действию' : '4) призыв к действию'}.\n\nВерни только текст по экранам.`,
+        story: `Напиши личную историю для ${count} сторис на тему: [вставь тему].\n\nФормат: как будто я рассказываю человеку в сторис, простым языком, без заголовков.\nСтруктура: 1) что было 2) что меня зацепило / сломало 3) что я поняла ${count > 3 ? '4) к чему пришла 5) мягкий вывод / призыв' : '4) вывод / мягкий призыв'}.\n\nВерни текст по экранам.`,
+        review: `Собери текст для ${count} сторис с отзывом / кейсом на тему: [вставь кейс].\n\nБез заголовков и лишних пояснений. По одному смыслу на экран.\nСтруктура: 1) исходная точка клиента 2) что сделали 3) результат ${count > 3 ? '4) почему это сработало 5) призыв' : '4) призыв'}.`,
+        announce: `Напиши анонс для ${count} сторис на тему: [вставь эфир / запуск / событие].\n\nФормат: коротко, ясно, по одному смыслу на экран, без заголовков.\nСтруктура: 1) что будет 2) зачем идти 3) что человек получит ${count > 3 ? '4) для кого это 5) призыв' : '4) призыв'}.`,
+        engage: `Собери вовлекающие сторис на ${count} экранов на тему: [вставь тему].\n\nНужно: лёгкий живой стиль, без заголовков, по одному смыслу на экран.\nСтруктура: 1) узнаваемая ситуация 2) вопрос / сомнение 3) моя мысль ${count > 3 ? '4) уточнение 5) вопрос в ответ' : '4) вопрос в ответ'}.`,
+      };
+      return templates[goal] || templates.warmup;
+    }
+
+    const PLATFORM_CONFIG = {
+      instagram: { label: 'Instagram', safeTop: 62, safeBottom: 108 },
+      telegram: { label: 'Telegram', safeTop: 54, safeBottom: 98 },
+      vk: { label: 'ВКонтакте', safeTop: 58, safeBottom: 102 },
+    };
+
+    function setStatus(text, mode = 'ready') {
+      els.statusText.textContent = text;
+      els.statusBox.dataset.mode = mode;
+    }
+
+    function slugify(text) {
+      return (text || 'story')
+        .toLowerCase()
+        .replace(/[^a-zР°-СЏ0-9]+/gi, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 40) || 'story';
+    }
+
+    function saveState() {
+      const data = {
+        cta: state.cta,
+        storyText: state.storyText,
+        goal: state.goal,
+        platform: state.platform,
+        style: state.style,
+        accent: state.accent,
+        length: state.length,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      els.draftState.textContent = 'Текст и настройки сохранены. Фото не сохраняются';
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      try {
+        const parsed = JSON.parse(raw);
+        state.cta = parsed.cta || '';
+        state.storyText = parsed.storyText || '';
+        state.goal = parsed.goal || 'warmup';
+        state.platform = parsed.platform || 'instagram';
+        state.style = parsed.style || 'minimal';
+        state.accent = parsed.accent || '#d7a84f';
+        state.length = Number(parsed.length) || 3;
+        state.photoDataUrls = [];
+        state.photoDataUrl = '';
+        state.slides = [];
+        state.activeSlideIndex = 0;
+      } catch (error) {
+        console.error('Не удалось загрузить состояние', error);
+      }
+    }
+
+    function hydrateInputs() {
+      els.ctaInput.value = state.cta || '';
+      els.storyText.value = state.storyText || '';
+      els.goalSelect.value = state.goal;
+      els.platformSelect.value = state.platform;
+      setAccentVars(state.accent);
+      updateChipGroup(els.styleChips, state.style, 'style');
+      updateChipGroup(els.accentChips, state.accent, 'accent');
+      updateChipGroup(els.lengthChips, String(state.length), 'length');
+    }
+
+    function updateChipGroup(container, value, type) {
+      [...container.querySelectorAll('.chip')].forEach(chip => {
+        const key = type === 'style' ? chip.dataset.style : type === 'accent' ? chip.dataset.accent : chip.dataset.length;
+        chip.classList.toggle('active', key === value);
+      });
+    }
+
+    function clampText(text, maxLength) {
+      if (!text) return '';
+      const trimmed = text.trim();
+      if (trimmed.length <= maxLength) return trimmed;
+      return trimmed.slice(0, maxLength).trim().replace(/[.,;:!?-]*$/, '') + 'вЂ¦';
+    }
+
+    function normalizeParagraphs(text) {
+      return text
+        .replace(/\r/g, '')
+        .split(/\n{2,}/)
+        .map(chunk => chunk.trim())
+        .filter(Boolean);
+    }
+
+    function splitLongPart(part, maxLength = 110) {
+      const words = String(part || '').trim().split(/\s+/).filter(Boolean);
+      if (!words.length) return [];
+      const pieces = [];
+      let current = '';
+
+      words.forEach(word => {
+        const candidate = current ? `${current} ${word}` : word;
+        if (candidate.length <= maxLength || !current) {
+          current = candidate;
+        } else {
+          pieces.push(current.trim());
+          current = word;
+        }
+      });
+
+      if (current.trim()) pieces.push(current.trim());
+      return pieces;
+    }
+
+    function textToUnits(text) {
+      const cleaned = String(text || '').replace(/\r/g, '').trim();
+      if (!cleaned) return [];
+
+      const paragraphs = normalizeParagraphs(cleaned);
+      const source = paragraphs.length ? paragraphs : [cleaned];
+      const rawUnits = source.flatMap(paragraph =>
+        paragraph
+          .replace(/\n+/g, ' ')
+          .split(/(?<=[.!?вЂ¦])\s+/)
+          .map(item => item.trim())
+          .filter(Boolean)
+      );
+
+      return rawUnits.flatMap(unit => unit.length > 110 ? splitLongPart(unit, 95) : [unit]);
+    }
+
+    function packUnitsIntoChunks(units, desiredCount, maxLength = 115) {
+      if (!units.length) return [];
+      const totalLength = units.reduce((sum, item) => sum + item.length, 0);
+      const targetLength = Math.min(maxLength, Math.max(62, Math.ceil(totalLength / Math.max(1, desiredCount))));
+      const chunks = [];
+      let current = '';
+
+      units.forEach(unit => {
+        const candidate = current ? `${current} ${unit}` : unit;
+        if (!current || candidate.length <= targetLength) {
+          current = candidate;
+        } else {
+          chunks.push(current.trim());
+          current = unit;
+        }
+      });
+
+      if (current.trim()) chunks.push(current.trim());
+      return chunks;
+    }
+
+    function rebalanceChunks(chunks, desiredCount) {
+      const result = [...chunks];
+      while (result.length < desiredCount) {
+        const idx = result.findIndex(item => item.length > 82);
+        if (idx === -1) break;
+        const words = result[idx].split(/\s+/).filter(Boolean);
+        if (words.length < 8) break;
+        const mid = Math.ceil(words.length / 2);
+        const first = words.slice(0, mid).join(' ');
+        const second = words.slice(mid).join(' ');
+        result.splice(idx, 1, first, second);
+      }
+      return result;
+    }
+
+    function splitTextForSlides(text, desiredCount) {
+      const units = textToUnits(text);
+      if (!units.length) return [];
+      let chunks = packUnitsIntoChunks(units, desiredCount);
+      chunks = rebalanceChunks(chunks, desiredCount);
+      return chunks.filter(Boolean).slice(0, 10);
+    }
+
+    function buildSlidesFromInput() {
+      const desiredCount = Number(state.length) || 3;
+      const cta = state.cta.trim();
+      const chunks = splitTextForSlides(state.storyText.trim(), desiredCount);
+
+      return chunks.map((body, index) => {
+        const isLast = index === chunks.length - 1;
+        return {
+          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + index),
+          photoDataUrl: state.photoDataUrls[index % Math.max(state.photoDataUrls.length, 1)] || state.photoDataUrl || '',
+          type: isLast && cta ? 'cta' : 'story',
+          title: '',
+          body: clampText(body, 190),
+          cta: isLast ? cta : '',
+        };
+      });
+    }
+
+    function renderSlide(slide, options = {}) {
+      const exportMode = Boolean(options.exportMode);
+      const safe = PLATFORM_CONFIG[state.platform];
+      const photo = slide.photoDataUrl || state.photoDataUrls[0] || state.photoDataUrl || '';
+      const image = photo ? `<div class="slide__image" style="background-image:url('${photo}');"></div>` : `<div class="slide__image" style="background-image:linear-gradient(135deg, rgba(215,168,79,0.25), rgba(61,88,150,0.32));"></div>`;
+      const body = (slide.body || '').replace(/\n/g, '<br />');
+      const bodyLength = (slide.body || '').length;
+      const textBoxClass = bodyLength > 105 ? 'slide__text-box is-long' : 'slide__text-box';
+      const bodyClass = bodyLength > 105 ? 'slide__body slide__body--small' : 'slide__body';
+      const cta = slide.cta ? `<div class="slide__cta">вњЁ ${escapeHtml(slide.cta)}</div>` : '';
+
+      return `
+        <div class="slide ${exportMode ? 'export-flat slide--export' : ''} slide--${state.style} slide--${slide.type}" style="--accent:${state.accent}; --safe-top:${safe.safeTop}px; --safe-bottom:${safe.safeBottom}px;">
+          ${image}
+          <div class="slide__bg-color" style="background: linear-gradient(180deg, rgba(10,12,18,0.02) 0%, rgba(10,12,18,0.16) 30%, rgba(10,12,18,0.78) 100%), linear-gradient(145deg, ${hexToRgba(state.accent, 0.12)}, transparent 55%);"></div>
+          <div class="slide__overlay"></div>
+          <div class="slide__content">
+            <div class="slide__bottom">
+              <div class="${textBoxClass}">
+                ${slide.body ? `<p class="${bodyClass}">${body}</p>` : ''}
+              </div>
+              ${cta}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function hexToRgba(hex, alpha) {
+      const clean = hex.replace('#', '');
+      const bigint = parseInt(clean.length === 3 ? clean.split('').map(ch => ch + ch).join('') : clean, 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function setAccentVars(hex) {
+      const accent = hex || '#d7a84f';
+      document.documentElement.style.setProperty('--accent', accent);
+      document.documentElement.style.setProperty('--accent-soft', hexToRgba(accent, 0.18));
+      document.documentElement.style.setProperty('--accent-mid', hexToRgba(accent, 0.38));
+      document.documentElement.style.setProperty('--accent-glow', hexToRgba(accent, 0.24));
+    }
+
+    function refreshPreview() {
+      const slide = state.slides[state.activeSlideIndex];
+      els.liveSlide.innerHTML = slide ? renderSlide(slide, { index: state.activeSlideIndex }) : '';
+      els.downloadCurrentBtn.disabled = !slide;
+      els.downloadAllBtn.disabled = !state.slides.length;
+      els.applyEditsBtn.disabled = !slide;
+      els.duplicateSlideBtn.disabled = !slide;
+      els.deleteSlideBtn.disabled = !slide;
+      els.emptyState.style.display = state.slides.length ? 'none' : 'block';
+      renderThumbs();
+      populateEditor();
+      saveState();
+      updateTelegramMainButton();
+    }
+
+    function renderThumbs() {
+      els.thumbsBox.innerHTML = '';
+      state.slides.forEach((slide, index) => {
+        const thumb = document.createElement('button');
+        thumb.className = `thumb ${index === state.activeSlideIndex ? 'active' : ''}`;
+        thumb.type = 'button';
+        thumb.innerHTML = `
+          <div class="thumb__mini" style="background-image:${slide.photoDataUrl ? `url('${slide.photoDataUrl}')` : 'linear-gradient(135deg, rgba(215,168,79,0.25), rgba(61,88,150,0.32))'};">
+            <div class="thumb__overlay"></div>
+            <div class="thumb__text">${escapeHtml(clampText(slide.body || '', 42))}</div>
+          </div>
+          <div class="thumb__meta">
+            <span>${index + 1}. сторис</span>
+            <span>${index === state.activeSlideIndex ? 'сейчас' : ''}</span>
+          </div>
+        `;
+        thumb.addEventListener('click', () => {
+          state.activeSlideIndex = index;
+          refreshPreview();
+        });
+        els.thumbsBox.appendChild(thumb);
+      });
+    }
+
+    function populateEditor() {
+      const slide = state.slides[state.activeSlideIndex];
+      els.editorSlideIndicator.textContent = slide ? `${state.activeSlideIndex + 1} РёР· ${state.slides.length}` : 'вЂ”';
+      els.slideBodyInput.value = slide?.body || '';
+      els.slideCtaInput.value = slide?.cta || '';
+    }
+
+    function applyInputsToState() {
+      state.cta = els.ctaInput.value.trim();
+      state.storyText = els.storyText.value.trim();
+      state.goal = els.goalSelect.value;
+      state.platform = els.platformSelect.value;
+    }
+
+    function updatePromptTemplate() {
+      els.promptTemplate.value = getPromptTemplate(state.goal, state.length);
+    }
+
+    function generateSlides() {
+      applyInputsToState();
+      if (!state.storyText) {
+        setStatus('Сначала вставь текст. Без текста тут ловить нечего.', 'error');
+        return;
+      }
+      setStatus('Собираю серию сторис…', 'working');
+      state.slides = buildSlidesFromInput();
+      state.activeSlideIndex = 0;
+      refreshPreview();
+
+      const desiredCount = Number(state.length) || 3;
+      if (state.slides.length > desiredCount) {
+        setStatus(`Готово: получилось ${state.slides.length} сторис. Текст был длиннее, поэтому я не стала душить его в ${desiredCount} экрана.`, 'ready');
+      } else if (state.slides.length < desiredCount) {
+        setStatus(`Готово: получилось ${state.slides.length} сторис. Текста меньше, и это нормально — лучше чище, чем пустые экраны.`, 'ready');
+      } else {
+        setStatus(`Готово: собрано ${state.slides.length} сторис`, 'ready');
+      }
+    }
+
+    function applySlideEdits() {
+      const slide = state.slides[state.activeSlideIndex];
+      if (!slide) return;
+      slide.body = els.slideBodyInput.value.trim();
+      slide.cta = els.slideCtaInput.value.trim();
+      if (slide.cta) {
+        state.slides.forEach((item, index) => {
+          if (index !== state.activeSlideIndex) item.cta = '';
+        });
+        slide.type = 'cta';
+      } else {
+        slide.type = 'story';
+      }
+      refreshPreview();
+      setStatus('Правки применены', 'ready');
+    }
+
+    function resetAll() {
+      state.photoDataUrls = [];
+      state.photoDataUrl = '';
+      state.cta = '';
+      state.storyText = '';
+      state.goal = 'warmup';
+      state.platform = 'instagram';
+      state.style = 'minimal';
+      state.accent = '#d7a84f';
+      state.length = 3;
+      state.slides = [];
+      state.activeSlideIndex = 0;
+      localStorage.removeItem(STORAGE_KEY);
+      els.photoInput.value = '';
+      hydrateInputs();
+      updatePromptTemplate();
+      refreshPreview();
+      els.draftState.textContent = 'Текст и настройки сохраняются локально';
+      setStatus('Сбросила всё. Можно начать заново.', 'ready');
+    }
+
+    function fillDemo() {
+      state.cta = 'Напиши слово «СТОРИС» в личку';
+      state.storyText = 'Раньше я слишком усложняла сторис и поэтому откладывала их до вечера. В итоге либо выкладывала на скорую руку, либо не выкладывала вообще.\n\nПотом я убрала всё лишнее: перестала сочинять длинные полотна, стала брать одну мысль на один экран и сразу стало легче.\n\nСейчас сторис делаются быстрее, выглядят чище и не перекрывают половину фотографии.';
+      state.goal = 'sale';
+      state.platform = 'instagram';
+      state.style = 'premium';
+      state.accent = '#d7a84f';
+      state.length = 4;
+      hydrateInputs();
+      updatePromptTemplate();
+      generateSlides();
+    }
+
+    async function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function captureSlide(slide, index, scale = 2) {
+      const wrapper = document.createElement('div');
+      wrapper.style.width = '1080px';
+      wrapper.style.height = '1920px';
+      wrapper.innerHTML = renderSlide(slide, { index, exportMode: true });
+      els.captureRoot.appendChild(wrapper);
+      const node = wrapper.firstElementChild;
+
+      const canvas = await html2canvas(node, {
+        useCORS: true,
+        backgroundColor: null,
+        scale,
+      });
+
+      wrapper.remove();
+      return canvas;
+    }
+
+    function buildSlideFileName(slide, index) {
+      return `${String(index + 1).padStart(2, '0')}-${slugify(slide.body || 'story')}.png`;
+    }
+
+    function getTelegramWebApp() {
+      return window.Telegram?.WebApp || null;
+    }
+
+    function canvasToBlob(canvas) {
+      return new Promise((resolve, reject) => {
+        canvas.toBlob(blob => {
+          if (blob) {
+            resolve(blob);
+            return;
+          }
+          reject(new Error('Canvas toBlob returned empty result'));
+        }, 'image/png');
+      });
+    }
+
+    function triggerBrowserDownload(blob, fileName) {
+      const link = document.createElement('a');
+      const objectUrl = URL.createObjectURL(blob);
+      link.href = objectUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1200);
+    }
+
+    async function uploadBlobForTelegram(blob, fileName) {
+      const response = await fetch('/.netlify/functions/story-assets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'image/png',
+          'X-File-Name': fileName,
+        },
+        body: blob,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed with status ${response.status}`);
+      }
+
+      return response.json();
+    }
+
+    function openTelegramFileLink(fileUrl) {
+      const tg = getTelegramWebApp();
+      if (!tg || typeof tg.openLink !== 'function') {
+        return false;
+      }
+      tg.openLink(fileUrl);
+      return true;
+    }
+
+    function requestTelegramDownload(fileUrl, fileName) {
+      const tg = getTelegramWebApp();
+      if (!tg) {
+        throw new Error('Telegram WebApp API is unavailable');
+      }
+
+      if (typeof tg.downloadFile !== 'function') {
+        return Promise.resolve({
+          ok: openTelegramFileLink(fileUrl),
+          mode: 'openLink',
+        });
+      }
+
+      return new Promise((resolve, reject) => {
+        try {
+          tg.downloadFile(
+            {
+              url: fileUrl,
+              file_name: fileName,
+              fileName,
+            },
+            accepted => resolve({
+              ok: Boolean(accepted),
+              mode: 'downloadFile',
+            })
+          );
+        } catch (error) {
+          reject(error);
+        }
+      });
+    }
+
+    async function tryShareSlideFile(blob, fileName) {
+      if (!navigator.share || typeof File === 'undefined') return false;
+
+      const file = new File([blob], fileName, { type: 'image/png' });
+      const payload = {
+        files: [file],
+        title: fileName,
+        text: 'PNG со сторис готов.',
+      };
+
+      if (navigator.canShare && !navigator.canShare({ files: payload.files })) {
+        return false;
+      }
+
+      await navigator.share(payload);
+      return true;
+    }
+
+    function isTelegramMiniApp() {
+      return Boolean(getTelegramWebApp());
+    }
+
+    async function downloadCurrentSlide() {
+      const slide = state.slides[state.activeSlideIndex];
+      if (!slide) return;
+      setStatus('Готовлю PNG текущей сторис…', 'working');
+      try {
+        const canvas = await captureSlide(slide, state.activeSlideIndex);
+        const blob = await canvasToBlob(canvas);
+        const fileName = buildSlideFileName(slide, state.activeSlideIndex);
+
+        if (isTelegramMiniApp()) {
+          const upload = await uploadBlobForTelegram(blob, fileName);
+          const tgResult = await requestTelegramDownload(upload.fileUrl, upload.fileName || fileName);
+          setStatus(
+            tgResult.ok
+              ? tgResult.mode === 'downloadFile'
+                ? 'Telegram открыл нативное скачивание. Подтверди сохранение файла.'
+                : 'Telegram открыл прямую ссылку на PNG. Сохрани файл из открывшегося экрана.'
+              : 'Скачивание не подтверждено в Telegram.',
+            'ready'
+          );
+          return;
+        }
+
+        try {
+          const shared = await tryShareSlideFile(blob, fileName);
+          if (shared) {
+            setStatus('PNG открыт через меню «Поделиться» — сохрани его в телефон', 'ready');
+            return;
+          }
+        } catch (shareError) {
+          if (shareError?.name === 'AbortError') {
+            setStatus('Сохранение отменено', 'ready');
+            return;
+          }
+          console.warn('Share failed, falling back to download', shareError);
+        }
+
+        triggerBrowserDownload(blob, fileName);
+        setStatus('Текущая сторис скачана', 'ready');
+      } catch (error) {
+        console.error(error);
+        setStatus(
+          isTelegramMiniApp()
+            ? 'Не удалось передать PNG в Telegram. Проверь, что сайт задеплоен на Netlify и функции /.netlify/functions/story-assets и story-file доступны.'
+            : 'Не удалось скачать текущую сторис',
+          'error'
+        );
+      }
+    }
+
+    async function downloadAllSlides() {
+      if (!state.slides.length) return;
+      if (isTelegramMiniApp()) {
+        setStatus('В Telegram на телефоне надёжнее сохранять по одной сторис через кнопку текущего слайда.', 'ready');
+        return;
+      }
+      setStatus('Готовлю всю серию отдельными PNG…', 'working');
+      try {
+        for (let i = 0; i < state.slides.length; i++) {
+          const slide = state.slides[i];
+          const canvas = await captureSlide(slide, i);
+          const blob = await canvasToBlob(canvas);
+          const fileName = buildSlideFileName(slide, i);
+          triggerBrowserDownload(blob, fileName);
+          await new Promise(resolve => setTimeout(resolve, 250));
+        }
+        setStatus('Серия скачана отдельными PNG', 'ready');
+      } catch (error) {
+        console.error(error);
+        setStatus('Не удалось скачать серию', 'error');
+      }
+    }
+
+    function duplicateSlide() {
+      const slide = state.slides[state.activeSlideIndex];
+      if (!slide) return;
+      const clone = { ...slide, id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) };
+      state.slides.splice(state.activeSlideIndex + 1, 0, clone);
+      state.activeSlideIndex += 1;
+      refreshPreview();
+      setStatus('Слайд продублирован', 'ready');
+    }
+
+    function deleteSlide() {
+      if (!state.slides.length) return;
+      state.slides.splice(state.activeSlideIndex, 1);
+      if (state.activeSlideIndex >= state.slides.length) {
+        state.activeSlideIndex = Math.max(0, state.slides.length - 1);
+      }
+      refreshPreview();
+      setStatus(state.slides.length ? 'Слайд удалён' : 'Все сторис удалены', 'ready');
+    }
+
+    function setupTelegramWebApp() {
+      if (!window.Telegram || !window.Telegram.WebApp) return;
+      const tg = window.Telegram.WebApp;
+      tg.ready();
+      tg.expand();
+      tg.MainButton.setParams({
+        text: 'Скачать текущую сторис',
+        color: '#d7a84f',
+        text_color: '#1d160d',
+        is_visible: false,
+      });
+      tg.MainButton.onClick(downloadCurrentSlide);
+    }
+
+    function updateTelegramMainButton() {
+      if (!window.Telegram || !window.Telegram.WebApp) return;
+      const tg = window.Telegram.WebApp;
+      if (state.slides.length) {
+        tg.MainButton.show();
+      } else {
+        tg.MainButton.hide();
+      }
+    }
+
+
+    function prevSlide() {
+      if (!state.slides.length) return;
+      state.activeSlideIndex = (state.activeSlideIndex - 1 + state.slides.length) % state.slides.length;
+      refreshPreview();
+    }
+
+    function nextSlide() {
+      if (!state.slides.length) return;
+      state.activeSlideIndex = (state.activeSlideIndex + 1) % state.slides.length;
+      refreshPreview();
+    }
+
+    function bindEvents() {
+      els.photoInput.addEventListener('change', async event => {
+        const files = [...(event.target.files || [])];
+        if (!files.length) return;
+        try {
+          const urls = [];
+          for (const file of files) {
+            urls.push(await fileToDataUrl(file));
+          }
+          state.photoDataUrls = urls;
+          state.photoDataUrl = urls[0] || '';
+          refreshPreview();
+          setStatus(`Фото загружено: ${urls.length}`, 'ready');
+        } catch (error) {
+          console.error(error);
+          setStatus('Не удалось прочитать фото', 'error');
+        }
+      });
+
+      [els.ctaInput, els.storyText].forEach(input => {
+        input.addEventListener('input', () => {
+          applyInputsToState();
+          saveState();
+        });
+      });
+
+      els.goalSelect.addEventListener('change', () => {
+        state.goal = els.goalSelect.value;
+        updatePromptTemplate();
+        saveState();
+      });
+
+      els.platformSelect.addEventListener('change', () => {
+        state.platform = els.platformSelect.value;
+        refreshPreview();
+        saveState();
+      });
+
+      els.styleChips.addEventListener('click', event => {
+        const chip = event.target.closest('.chip');
+        if (!chip) return;
+        state.style = chip.dataset.style;
+        updateChipGroup(els.styleChips, state.style, 'style');
+        refreshPreview();
+      });
+
+      els.accentChips.addEventListener('click', event => {
+        const chip = event.target.closest('.chip');
+        if (!chip) return;
+        state.accent = chip.dataset.accent;
+        setAccentVars(state.accent);
+        updateChipGroup(els.accentChips, state.accent, 'accent');
+        refreshPreview();
+      });
+
+      els.lengthChips.addEventListener('click', event => {
+        const chip = event.target.closest('.chip');
+        if (!chip) return;
+        state.length = Number(chip.dataset.length);
+        updateChipGroup(els.lengthChips, String(state.length), 'length');
+        updatePromptTemplate();
+        saveState();
+      });
+
+      els.generateBtn.addEventListener('click', generateSlides);
+      els.resetBtn.addEventListener('click', resetAll);
+      els.demoBtn.addEventListener('click', fillDemo);
+      els.copyPromptBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(els.promptTemplate.value);
+          setStatus('Промпт скопирован', 'ready');
+        } catch (error) {
+          setStatus('Не удалось скопировать промпт', 'error');
+        }
+      });
+      els.applyEditsBtn.addEventListener('click', applySlideEdits);
+      els.duplicateSlideBtn.addEventListener('click', duplicateSlide);
+      els.deleteSlideBtn.addEventListener('click', deleteSlide);
+      els.downloadCurrentBtn.addEventListener('click', downloadCurrentSlide);
+      els.downloadAllBtn.addEventListener('click', downloadAllSlides);
+      els.prevSlideBtn.addEventListener('click', prevSlide);
+      els.nextSlideBtn.addEventListener('click', nextSlide);
+
+      document.addEventListener('keydown', event => {
+        if (!state.slides.length) return;
+        const tag = document.activeElement?.tagName || '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        if (event.key === 'ArrowRight') nextSlide();
+        if (event.key === 'ArrowLeft') prevSlide();
+      });
+    }
+
+    function init() {
+      loadState();
+      hydrateInputs();
+      updatePromptTemplate();
+      refreshPreview();
+      bindEvents();
+      setupTelegramWebApp();
+      setStatus(state.slides.length ? `Загружен черновик: ${state.slides.length} сторис` : 'Жду твой первый заход', 'ready');
+    }
+
+    init();
+  </script>
+</body>
+</html>
+
